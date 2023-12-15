@@ -1,64 +1,94 @@
+name: 'Terraform Cloud Run'
+
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+
+env:
+  tf_actions_working_dir: './'
+
 defaults:
   run:
     working-directory: ${{ env.tf_actions_working_dir }}
+
 permissions:
   pull-requests: write
-steps:
-- uses: actions/checkout@v3
-- uses: hashicorp/setup-terraform@v3
 
-- name: Terraform fmt
-  id: fmt
-  run: terraform fmt -check
-  continue-on-error: true
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    environment: main # Specify the environment to use here
+    defaults:
+      run:
+        working-directory: ${{ env.tf_actions_working_dir }}
 
-- name: Terraform Init
-  id: init
-  run: terraform init
+    steps:
+    - uses: actions/checkout@v3
 
-- name: Terraform Validate
-  id: validate
-  run: terraform validate -no-color
+    - uses: hashicorp/setup-terraform@v3
+      with:
+        cli_config_credentials_hostname: app.terraform.io
+        cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-- name: Terraform Plan
-  id: plan
-  run: terraform plan -no-color
-  continue-on-error: true
+    - name: Terraform fmt
+      id: fmt
+      run: terraform fmt -check
+      continue-on-error: true
 
-- uses: actions/github-script@v6
-  if: github.event_name == 'pull_request'
-  env:
-    PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
-  with:
-    cli_config_credentials_hostname: app.terraform.io
-    cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-    script: |
-      const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
-      #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
-      #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
-      <details><summary>Validation Output</summary>
+    - name: Terraform Init
+      id: init
+      run: terraform init
 
-      \`\`\`\n
-      ${{ steps.validate.outputs.stdout }}
-      \`\`\`
+    - name: Terraform Validate
+      id: validate
+      run: terraform validate -no-color
 
-      </details>
+    - name: Terraform Plan
+      id: plan
+      run: terraform plan -no-color
+      continue-on-error: true
 
-      #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+    - name: Terraform Apply
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      run: terraform apply -auto-approve
 
-      <details><summary>Show Plan</summary>
+    - uses: actions/github-script@v6
+      if: github.event_name == 'pull_request'
+      env:
+        PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const output = `#### Terraform Format and Style \`${{ steps.fmt.outcome }}\`
+          #### Terraform Initialization \`${{ steps.init.outcome }}\`
+          #### Terraform Validation \`${{ steps.validate.outcome }}\`
+          <details><summary>Validation Output</summary>
 
-      \`\`\`\n
-      ${process.env.PLAN}
-      \`\`\`
+          \`\`\`\n
+          ${{ steps.validate.outputs.stdout }}
+          \`\`\`
 
-      </details>
+          </details>
 
-      *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Working Directory: \`${{ env.tf_actions_working_dir }}\`, Workflow: \`${{ github.workflow }}\`*`;
+          #### Terraform Plan \`${{ steps.plan.outcome }}\`
 
-      github.rest.issues.createComment({
-        issue_number: context.issue.number,
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        body: output
-      })
+          <details><summary>Show Plan</summary>
+
+          \`\`\`\n
+          ${process.env.PLAN}
+          \`\`\`
+
+          </details>
+
+          *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Working Directory: \`${{ env.tf_actions_working_dir }}\`, Workflow: \`${{ github.workflow }}\`*`;
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          })
