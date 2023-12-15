@@ -30,4 +30,4 @@ resource "aws_instance" "ubuntu" {
   }
 
   key_name = "ubuntu"
-
+}
