@@ -32,7 +32,6 @@ jobs:
     runs-on: ubuntu-latest
     ## OPTIONAL: can scope variables to this specific job
     ## Example:
-    environment: main # Specify the environment to use here
     # env:
     #  TF_CLOUD_ORGANIZATION: ${{ secrets.TF_CLOUD_ORG }}
     steps:
