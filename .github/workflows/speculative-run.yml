@@ -55,7 +55,7 @@ jobs:
           plan_only: true
           ## OPTIONAL: set your own message for run. A default message will be defined for you.
           ## Example:
-          # message: "Triggered From GitHub Actions CI ${{ github.sha }}"
+          message: "Triggered From GitHub Actions CI ${{ github.sha }}"
 
       - uses: hashicorp/tfc-workflows-github/actions/plan-output@v1.1.1
         id: plan-output
