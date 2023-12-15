@@ -24,7 +24,7 @@ env:
   TF_WORKSPACE: "tfc-guide-example" ## Name of your existing workspace in Terraform Cloud.
   CONFIG_DIRECTORY: "./" ## Directory of your Terraform Configuration. Relative to the project root.
   ## Additional env variables
-  # TF_LOG: DEBUG ## Helpful for troubleshooting
+  TF_LOG: DEBUG ## Helpful for troubleshooting
   # TF_MAX_TIMEOUT: "30m" ## If you wish to override the default "1h"
 
 jobs:
@@ -32,6 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     ## OPTIONAL: can scope variables to this specific job
     ## Example:
+    environment: main # Specify the environment to use here
     # env:
     #  TF_CLOUD_ORGANIZATION: ${{ secrets.TF_CLOUD_ORG }}
     steps:
